@@ -58,3 +58,33 @@ Then consume from an MSA:
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
 ```
+
+## Publish to GitHub Packages
+
+This library publishes to:
+
+```text
+https://maven.pkg.github.com/kguerraxochihua-43/kaffe-msa-common
+```
+
+Manual publish:
+
+```bash
+mvn deploy
+```
+
+The Maven server id is `github`. Local machines must configure credentials in `~/.m2/settings.xml`:
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>kguerraxochihua-43</username>
+      <password>${env.GITHUB_TOKEN}</password>
+    </server>
+  </servers>
+</settings>
+```
+
+Use a GitHub token with `read:packages` to consume and `write:packages` to publish.
