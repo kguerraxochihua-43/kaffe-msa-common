@@ -15,14 +15,30 @@ Shared infrastructure classes for Kaffe Spring Boot microservices.
 All local MSAs must use the same secret:
 
 ```properties
-jwt.secret=kaffe-local-dev-secret-change-me
-jwt.cookie-name=${JWT_COOKIE_NAME:KAFFE_AUTH}
+kaffe.jwt.secret=kaffe-local-dev-secret-change-me
+kaffe.jwt.cookie-name=${JWT_COOKIE_NAME:KAFFE_AUTH}
 ```
 
 Production must provide:
 
 ```properties
-jwt.secret=${JWT_SECRET}
+kaffe.jwt.secret=${JWT_SECRET}
+```
+
+## Database Rule
+
+Services consume the shared datasource auto-configuration through:
+
+```properties
+kaffe.datasource.url=${DATABASE_URL}
+kaffe.datasource.username=${DB_USER}
+kaffe.datasource.password=${DB_PASSWORD}
+```
+
+The auth schema standard is:
+
+```properties
+kaffe.auth.schema=${KAFFE_AUTH_SCHEMA:kaffe_auth}
 ```
 
 ## Maven Usage
@@ -42,4 +58,3 @@ Then consume from an MSA:
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
 ```
-
