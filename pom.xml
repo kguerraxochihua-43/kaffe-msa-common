@@ -25,7 +25,7 @@
 
     <distributionManagement>
         <repository>
-            <id>github</id>
+            <id>github-kaffe-packages</id>
             <name>GitHub Packages</name>
             <url>https://maven.pkg.github.com/kguerraxochihua-43/kaffe-msa-common</url>
         </repository>

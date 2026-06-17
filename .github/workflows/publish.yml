@@ -22,7 +22,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          server-id: github
+          server-id: github-kaffe-packages
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
 

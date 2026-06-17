@@ -73,18 +73,26 @@ Manual publish:
 mvn deploy
 ```
 
-The Maven server id is `github`. Local machines must configure credentials in `~/.m2/settings.xml`:
+The Maven server id is `github-kaffe-packages`. Local machines must configure credentials in `~/.m2/settings.xml`:
 
 ```xml
 <settings>
   <servers>
     <server>
-      <id>github</id>
+      <id>github-kaffe-packages</id>
       <username>kguerraxochihua-43</username>
-      <password>${env.GITHUB_TOKEN}</password>
+      <password>${env.KAFFE_GITHUB_PACKAGES_TOKEN}</password>
     </server>
   </servers>
 </settings>
 ```
 
-Use a GitHub token with `read:packages` to consume and `write:packages` to publish.
+Use a GitHub token with `read:packages` to consume and `write:packages` to publish manually.
+
+Recommended local environment variable:
+
+```bash
+export KAFFE_GITHUB_PACKAGES_TOKEN='<github-token>'
+```
+
+GitHub Actions uses its automatic `GITHUB_TOKEN` internally for publishing; local machines should use `KAFFE_GITHUB_PACKAGES_TOKEN`.
