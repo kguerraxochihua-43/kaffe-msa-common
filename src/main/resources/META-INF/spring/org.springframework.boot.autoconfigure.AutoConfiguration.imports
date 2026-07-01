@@ -1,1 +1,2 @@
 com.kaffe.common.config.KaffeCommonAutoConfiguration
+com.kaffe.common.rabbit.KaffeRabbitAutoConfiguration

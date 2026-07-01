@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JwtTokenServiceTest {
 
-    private static final String SECRET = "kaffe-local-dev-secret-change-me";
+    private static final String SECRET = "kaffe-local-dev-secret-change-me-32chars";
 
     @Test
     void shouldGenerateAndParseJwtPrincipal() {
@@ -29,11 +29,26 @@ class JwtTokenServiceTest {
     @Test
     void shouldRejectTokensSignedWithDifferentSecret() {
         JwtTokenService issuer = new JwtTokenService(SECRET);
-        JwtTokenService verifier = new JwtTokenService("different-local-dev-secret-value");
+        JwtTokenService verifier = new JwtTokenService("different-local-dev-secret-value-32chars");
 
         String token = issuer.generateToken(2L, "kevin@kaffe.com.mx", "owner", 86_400_000L);
 
         assertThat(verifier.parsePrincipal(token)).isEmpty();
+    }
+
+    @Test
+    void shouldRejectPurposeTokenAsPrincipal() {
+        JwtTokenService service = new JwtTokenService(SECRET);
+
+        String token = service.generatePurposeToken(
+                "kevin@kaffe.com.mx",
+                "SIGNUP_VERIFICATION",
+                java.util.Map.of("email", "kevin@kaffe.com.mx"),
+                900_000L
+        );
+
+        assertThat(service.isValidPurposeToken(token, "kevin@kaffe.com.mx", "SIGNUP_VERIFICATION")).isTrue();
+        assertThat(service.parsePrincipal(token)).isEmpty();
     }
 
     @Test

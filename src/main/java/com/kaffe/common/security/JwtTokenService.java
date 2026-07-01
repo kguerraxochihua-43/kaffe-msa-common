@@ -15,6 +15,11 @@ import java.util.Optional;
 
 public class JwtTokenService {
 
+    public static final String CLAIM_TOKEN_TYPE = "tokenType";
+    public static final String TOKEN_TYPE_ACCESS = "ACCESS";
+    public static final String TOKEN_TYPE_PURPOSE = "PURPOSE";
+    public static final String CLAIM_PURPOSE = "purpose";
+
     private final SecretKey signingKey;
     private final Clock clock;
 
@@ -36,10 +41,18 @@ public class JwtTokenService {
                 Map.of(
                         "userId", String.valueOf(userId),
                         "email", email,
-                        "role", role
+                        "role", role,
+                        CLAIM_TOKEN_TYPE, TOKEN_TYPE_ACCESS
                 ),
                 expirationMs
         );
+    }
+
+    public String generatePurposeToken(String subject, String purpose, Map<String, ?> claims, long expirationMs) {
+        java.util.LinkedHashMap<String, Object> tokenClaims = new java.util.LinkedHashMap<>(claims);
+        tokenClaims.put(CLAIM_TOKEN_TYPE, TOKEN_TYPE_PURPOSE);
+        tokenClaims.put(CLAIM_PURPOSE, purpose);
+        return generateToken(subject, tokenClaims, expirationMs);
     }
 
     public String generateToken(String subject, Map<String, ?> claims, long expirationMs) {
@@ -59,9 +72,14 @@ public class JwtTokenService {
             String subject = claims.getSubject();
             String email = claims.get("email", String.class);
             String role = claims.get("role", String.class);
+            String tokenType = claims.get(CLAIM_TOKEN_TYPE, String.class);
             Long userId = parseUserId(claims.get("userId", String.class));
 
-            if (subject == null || subject.isBlank()) {
+            if (isBlank(subject)
+                    || isBlank(email)
+                    || isBlank(role)
+                    || userId == null
+                    || !TOKEN_TYPE_ACCESS.equals(tokenType)) {
                 return Optional.empty();
             }
 
@@ -95,10 +113,12 @@ public class JwtTokenService {
         try {
             Claims claims = parseClaims(token);
             String subject = claims.getSubject();
-            String purpose = claims.get("purpose", String.class);
+            String purpose = claims.get(CLAIM_PURPOSE, String.class);
+            String tokenType = claims.get(CLAIM_TOKEN_TYPE, String.class);
             return expectedSubject != null
                     && expectedSubject.equalsIgnoreCase(subject)
-                    && expectedPurpose.equals(purpose);
+                    && expectedPurpose.equals(purpose)
+                    && TOKEN_TYPE_PURPOSE.equals(tokenType);
         } catch (JwtException | IllegalArgumentException ex) {
             return false;
         }
@@ -118,5 +138,9 @@ public class JwtTokenService {
             return null;
         }
         return Long.valueOf(value);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
