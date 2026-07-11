@@ -9,8 +9,8 @@ public class KaffeDataSourceProperties {
     private String username;
     private String password;
     private String driverClassName = "org.postgresql.Driver";
-    private int maximumPoolSize = 10;
-    private int minimumIdle = 2;
+    private int maximumPoolSize = 2;
+    private int minimumIdle = 0;
     private long connectionTimeout = 30000;
 
     public String getUrl() {

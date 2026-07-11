@@ -153,8 +153,10 @@ public class KaffeCommonAutoConfiguration {
                 environment.getProperty("spring.datasource.driver-class-name"),
                 "org.postgresql.Driver"
         ));
-        dataSource.setMaximumPoolSize(properties.getMaximumPoolSize());
-        dataSource.setMinimumIdle(properties.getMinimumIdle());
+        int maximumPoolSize = Math.max(1, properties.getMaximumPoolSize());
+        int minimumIdle = Math.max(0, Math.min(properties.getMinimumIdle(), maximumPoolSize));
+        dataSource.setMaximumPoolSize(maximumPoolSize);
+        dataSource.setMinimumIdle(minimumIdle);
         dataSource.setConnectionTimeout(properties.getConnectionTimeout());
         return dataSource;
     }
