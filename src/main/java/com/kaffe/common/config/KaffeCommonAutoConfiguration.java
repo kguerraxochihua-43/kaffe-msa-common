@@ -1,10 +1,12 @@
 package com.kaffe.common.config;
 
 import com.kaffe.common.exception.KaffeGlobalExceptionHandler;
+import com.kaffe.common.media.MediaAssetService;
 import com.kaffe.common.security.CurrentUserProvider;
 import com.kaffe.common.security.JwtAuthenticationFilter;
 import com.kaffe.common.security.JwtTokenService;
 import com.kaffe.common.web.RequestTraceFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -24,11 +26,19 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import javax.sql.DataSource;
 
 @AutoConfiguration(before = DataSourceAutoConfiguration.class)
-@EnableConfigurationProperties({KaffeDataSourceProperties.class, KaffeJwtProperties.class, KaffeCorsProperties.class})
+@EnableConfigurationProperties({
+        KaffeDataSourceProperties.class,
+        KaffeJwtProperties.class,
+        KaffeCorsProperties.class,
+        KaffeMediaProperties.class
+})
 public class KaffeCommonAutoConfiguration {
 
     @Bean
@@ -118,6 +128,46 @@ public class KaffeCommonAutoConfiguration {
     @ConditionalOnMissingBean
     public KaffeGlobalExceptionHandler kaffeGlobalExceptionHandler() {
         return new KaffeGlobalExceptionHandler();
+    }
+
+    @Bean
+    @ConditionalOnClass(S3Presigner.class)
+    @ConditionalOnMissingBean
+    public S3Presigner s3Presigner(KaffeMediaProperties properties, Environment environment) {
+        return S3Presigner.builder()
+                .region(Region.of(firstNonBlank(
+                        properties.getS3().getRegion(),
+                        environment.getProperty("AWS_REGION"),
+                        environment.getProperty("AWS_DEFAULT_REGION"),
+                        "us-east-1"
+                )))
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnClass(S3Client.class)
+    @ConditionalOnMissingBean
+    public S3Client s3Client(KaffeMediaProperties properties, Environment environment) {
+        return S3Client.builder()
+                .region(Region.of(firstNonBlank(
+                        properties.getS3().getRegion(),
+                        environment.getProperty("AWS_REGION"),
+                        environment.getProperty("AWS_DEFAULT_REGION"),
+                        "us-east-1"
+                )))
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public MediaAssetService mediaAssetService(
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper,
+            KaffeMediaProperties properties,
+            S3Presigner s3Presigner,
+            S3Client s3Client
+    ) {
+        return new MediaAssetService(jdbcTemplate, objectMapper, properties, s3Presigner, s3Client);
     }
 
     @Bean
