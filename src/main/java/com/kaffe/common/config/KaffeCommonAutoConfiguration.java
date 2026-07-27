@@ -44,6 +44,29 @@ public class KaffeCommonAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public JwtTokenService jwtTokenService(KaffeJwtProperties properties, Environment environment) {
+        String publicKey = firstNonBlank(
+                properties.getPublicKey(),
+                environment.getProperty("JWT_PUBLIC_KEY_BASE64"),
+                environment.getProperty("JWT_PUBLIC_KEY")
+        );
+        if (publicKey != null) {
+            return new JwtTokenService(
+                    publicKey,
+                    firstNonBlank(
+                            properties.getPrivateKey(),
+                            environment.getProperty("JWT_PRIVATE_KEY_BASE64"),
+                            environment.getProperty("JWT_PRIVATE_KEY")
+                    ),
+                    firstNonBlank(
+                            properties.getLegacySecret(),
+                            environment.getProperty("JWT_LEGACY_SECRET")
+                    ),
+                    properties.isAllowLegacyHmac(),
+                    properties.getIssuer(),
+                    properties.getKeyId()
+            );
+        }
+
         return new JwtTokenService(firstNonBlank(
                 properties.getSecret(),
                 environment.getProperty("jwt.secret"),

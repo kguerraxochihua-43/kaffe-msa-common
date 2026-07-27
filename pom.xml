@@ -7,13 +7,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.3</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
     <groupId>com.kaffe</groupId>
     <artifactId>kaffe-msa-common</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>kaffe-msa-common</name>
     <description>Shared infrastructure for Kaffe microservices</description>
     <packaging>jar</packaging>
