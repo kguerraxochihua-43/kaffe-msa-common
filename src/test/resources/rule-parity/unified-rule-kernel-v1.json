@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "kaffe-rule-kernel/v1",
+  "definition": {
+    "startsAt": "2026-08-21T00:00:00-06:00",
+    "endsAt": "2026-08-28T00:00:00-06:00",
+    "dayOfWeek": 5,
+    "timeFrom": "09:00:00",
+    "timeTo": "13:00:00",
+    "paymentMethods": ["kaffe_pay"],
+    "orderChannels": ["customer_app", "qr_menu"]
+  },
+  "cases": [
+    {
+      "name": "validity and schedule start are inclusive",
+      "active": true,
+      "effectiveAt": "2026-08-21T15:00:00Z",
+      "zoneId": "America/Mexico_City",
+      "paymentMethod": "kaffe-pay",
+      "orderChannel": "customer_app",
+      "eligible": true,
+      "reason": "eligible"
+    },
+    {
+      "name": "schedule end is exclusive",
+      "active": true,
+      "effectiveAt": "2026-08-21T19:00:00Z",
+      "zoneId": "America/Mexico_City",
+      "paymentMethod": "kaffe_pay",
+      "orderChannel": "customer_app",
+      "eligible": false,
+      "reason": "outside_schedule"
+    },
+    {
+      "name": "campaign end is exclusive",
+      "active": true,
+      "effectiveAt": "2026-08-28T00:00:00-06:00",
+      "zoneId": "America/Mexico_City",
+      "paymentMethod": "kaffe_pay",
+      "orderChannel": "customer_app",
+      "eligible": false,
+      "reason": "ended"
+    },
+    {
+      "name": "future validity is rejected before schedule",
+      "active": true,
+      "effectiveAt": "2026-08-20T23:59:59-06:00",
+      "zoneId": "America/Mexico_City",
+      "paymentMethod": "kaffe_pay",
+      "orderChannel": "customer_app",
+      "eligible": false,
+      "reason": "not_started"
+    },
+    {
+      "name": "payment scope remains independent from order channel",
+      "active": true,
+      "effectiveAt": "2026-08-21T16:00:00Z",
+      "zoneId": "America/Mexico_City",
+      "paymentMethod": "cash",
+      "orderChannel": "customer_app",
+      "eligible": false,
+      "reason": "payment_method_not_eligible"
+    },
+    {
+      "name": "order channel is evaluated after payment scope",
+      "active": true,
+      "effectiveAt": "2026-08-21T16:00:00Z",
+      "zoneId": "America/Mexico_City",
+      "paymentMethod": "kaffe_pay",
+      "orderChannel": "kaffe_service",
+      "eligible": false,
+      "reason": "order_channel_not_eligible"
+    },
+    {
+      "name": "inactive definition is always rejected",
+      "active": false,
+      "effectiveAt": "2026-08-21T16:00:00Z",
+      "zoneId": "America/Mexico_City",
+      "paymentMethod": "kaffe_pay",
+      "orderChannel": "customer_app",
+      "eligible": false,
+      "reason": "inactive"
+    }
+  ]
+}
