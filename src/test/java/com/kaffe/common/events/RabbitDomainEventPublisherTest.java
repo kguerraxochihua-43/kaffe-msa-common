@@ -9,8 +9,11 @@ import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,6 +85,32 @@ class RabbitDomainEventPublisherTest {
         assertThatThrownBy(() -> publisher.publish("kaffe.events", EVENT.eventType(), EVENT))
                 .isInstanceOf(AmqpException.class)
                 .hasMessageContaining("could not route event");
+    }
+
+    @Test
+    void usesANewBrokerCorrelationForEveryRetryWhileKeepingTheLogicalEventStable() {
+        RabbitTemplate template = mock(RabbitTemplate.class);
+        List<String> correlationIds = new ArrayList<>();
+        doAnswer(invocation -> {
+            CorrelationData correlation = invocation.getArgument(4);
+            correlationIds.add(correlation.getId());
+            correlation.getFuture().complete(new CorrelationData.Confirm(true, null));
+            return null;
+        }).when(template).convertAndSend(
+                eq("kaffe.events"),
+                eq(EVENT.eventType()),
+                eq(EVENT),
+                any(MessagePostProcessor.class),
+                any(CorrelationData.class));
+        RabbitDomainEventPublisher publisher = new RabbitDomainEventPublisher(template, 1_000);
+
+        publisher.publish("kaffe.events", EVENT.eventType(), EVENT);
+        publisher.publish("kaffe.events", EVENT.eventType(), EVENT);
+
+        assertThat(correlationIds).hasSize(2);
+        assertThat(correlationIds.get(0)).startsWith(EVENT.eventId() + ":");
+        assertThat(correlationIds.get(1)).startsWith(EVENT.eventId() + ":");
+        assertThat(correlationIds.get(0)).isNotEqualTo(correlationIds.get(1));
     }
 
     private RabbitTemplate confirmingTemplate(boolean ack, String reason) {

@@ -7,6 +7,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.UUID;
 
 public class RabbitDomainEventPublisher implements DomainEventPublisher {
 
@@ -24,7 +25,12 @@ public class RabbitDomainEventPublisher implements DomainEventPublisher {
 
     @Override
     public void publish(String exchange, String routingKey, DomainEventEnvelope envelope) {
-        CorrelationData correlation = new CorrelationData(envelope.eventId());
+        // A logical event can be published more than once when a confirmation
+        // times out. RabbitTemplate requires each in-flight confirmation to
+        // have a distinct correlation id; the stable event id remains in the
+        // AMQP message id for consumer idempotency.
+        CorrelationData correlation = new CorrelationData(
+                envelope.eventId() + ":" + UUID.randomUUID());
         rabbitTemplate.convertAndSend(exchange, routingKey, envelope, message -> {
             message.getMessageProperties().setMessageId(envelope.eventId());
             message.getMessageProperties().setType(envelope.eventType());
