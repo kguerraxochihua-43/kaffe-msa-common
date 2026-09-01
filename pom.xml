@@ -13,7 +13,7 @@
 
     <groupId>com.kaffe</groupId>
     <artifactId>kaffe-msa-common</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <name>kaffe-msa-common</name>
     <description>Shared infrastructure for Kaffe microservices</description>
     <packaging>jar</packaging>

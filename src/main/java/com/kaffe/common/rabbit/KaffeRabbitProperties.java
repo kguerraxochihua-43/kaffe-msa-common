@@ -13,6 +13,7 @@ public class KaffeRabbitProperties {
     private String virtualHost = "/";
     private String exchange = "kaffe.events";
     private String deadLetterExchange = "kaffe.events.dlx";
+    private long publisherConfirmTimeoutMillis = 10_000;
 
     public boolean isEnabled() {
         return enabled;
@@ -76,5 +77,13 @@ public class KaffeRabbitProperties {
 
     public void setDeadLetterExchange(String deadLetterExchange) {
         this.deadLetterExchange = deadLetterExchange;
+    }
+
+    public long getPublisherConfirmTimeoutMillis() {
+        return publisherConfirmTimeoutMillis;
+    }
+
+    public void setPublisherConfirmTimeoutMillis(long publisherConfirmTimeoutMillis) {
+        this.publisherConfirmTimeoutMillis = publisherConfirmTimeoutMillis;
     }
 }

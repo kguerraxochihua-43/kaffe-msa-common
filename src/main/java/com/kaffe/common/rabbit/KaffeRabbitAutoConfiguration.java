@@ -30,6 +30,8 @@ public class KaffeRabbitAutoConfiguration {
         factory.setUsername(properties.getUsername());
         factory.setPassword(properties.getPassword());
         factory.setVirtualHost(properties.getVirtualHost());
+        factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
+        factory.setPublisherReturns(true);
         return factory;
     }
 
@@ -46,6 +48,7 @@ public class KaffeRabbitAutoConfiguration {
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
+        rabbitTemplate.setMandatory(true);
         return rabbitTemplate;
     }
 
@@ -64,8 +67,13 @@ public class KaffeRabbitAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "kaffe.rabbit", name = "enabled", havingValue = "true")
-    public DomainEventPublisher rabbitDomainEventPublisher(RabbitTemplate rabbitTemplate) {
-        return new RabbitDomainEventPublisher(rabbitTemplate);
+    public DomainEventPublisher rabbitDomainEventPublisher(
+            RabbitTemplate rabbitTemplate,
+            KaffeRabbitProperties properties
+    ) {
+        return new RabbitDomainEventPublisher(
+                rabbitTemplate,
+                properties.getPublisherConfirmTimeoutMillis());
     }
 
     @Bean
