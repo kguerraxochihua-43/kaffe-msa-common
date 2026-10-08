@@ -5,6 +5,7 @@ import com.kaffe.common.media.MediaAssetService;
 import com.kaffe.common.security.CurrentUserProvider;
 import com.kaffe.common.security.JwtAuthenticationFilter;
 import com.kaffe.common.security.JwtTokenService;
+import com.kaffe.common.security.RuntimeDatabaseRoleGuard;
 import com.kaffe.common.web.RequestTraceFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
@@ -13,7 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -44,35 +45,14 @@ public class KaffeCommonAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public JwtTokenService jwtTokenService(KaffeJwtProperties properties, Environment environment) {
-        String publicKey = firstNonBlank(
-                properties.getPublicKey(),
-                environment.getProperty("JWT_PUBLIC_KEY_BASE64"),
-                environment.getProperty("JWT_PUBLIC_KEY")
-        );
-        if (publicKey != null) {
-            return new JwtTokenService(
-                    publicKey,
-                    firstNonBlank(
-                            properties.getPrivateKey(),
-                            environment.getProperty("JWT_PRIVATE_KEY_BASE64"),
-                            environment.getProperty("JWT_PRIVATE_KEY")
-                    ),
-                    firstNonBlank(
-                            properties.getLegacySecret(),
-                            environment.getProperty("JWT_LEGACY_SECRET")
-                    ),
-                    properties.isAllowLegacyHmac(),
-                    properties.getIssuer(),
-                    properties.getKeyId()
-            );
-        }
+        return JwtTokenServiceFactory.create(properties, environment);
+    }
 
-        return new JwtTokenService(firstNonBlank(
-                properties.getSecret(),
-                environment.getProperty("jwt.secret"),
-                environment.getProperty("auth.jwt.secret"),
-                environment.getProperty("JWT_SECRET")
-        ));
+    @Bean(initMethod = "verify")
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "kaffe.runtime", name = "enforce-least-privilege", havingValue = "true")
+    public RuntimeDatabaseRoleGuard runtimeDatabaseRoleGuard(DataSource dataSource) {
+        return new RuntimeDatabaseRoleGuard(new JdbcTemplate(dataSource));
     }
 
     @Bean

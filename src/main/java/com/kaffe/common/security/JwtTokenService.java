@@ -36,12 +36,18 @@ public class JwtTokenService {
     private final String issuer;
     private final String keyId;
     private final Clock clock;
+    private final boolean signingEnabled;
+    private final Instant legacyAcceptUntil;
 
     public JwtTokenService(String secret) {
         this(secret, Clock.systemUTC());
     }
 
     public JwtTokenService(String secret, Clock clock) {
+        this(secret, clock, true);
+    }
+
+    public JwtTokenService(String secret, Clock clock, boolean signingEnabled) {
         if (secret == null || secret.length() < 32) {
             throw new IllegalArgumentException("JWT secret must contain at least 32 characters for HS256");
         }
@@ -52,6 +58,8 @@ public class JwtTokenService {
         this.issuer = null;
         this.keyId = null;
         this.clock = clock;
+        this.signingEnabled = signingEnabled;
+        this.legacyAcceptUntil = null;
     }
 
     public JwtTokenService(
@@ -74,13 +82,28 @@ public class JwtTokenService {
             String keyId,
             Clock clock
     ) {
+        this(publicKey, privateKey, legacySecret, allowLegacyHmac, issuer, keyId, clock, true, null);
+    }
+
+    public JwtTokenService(
+            String publicKey, String privateKey, String legacySecret, boolean allowLegacyHmac,
+            String issuer, String keyId, Clock clock, boolean signingEnabled, Instant legacyAcceptUntil
+    ) {
         this.publicKey = readPublicKey(publicKey);
         this.privateKey = isBlank(privateKey) ? null : readPrivateKey(privateKey);
+        if (this.privateKey != null && !this.publicKey.getModulus().equals(this.privateKey.getModulus())) {
+            throw new IllegalArgumentException("JWT RSA public and private keys do not match");
+        }
+        if (!signingEnabled && this.privateKey != null) {
+            throw new IllegalArgumentException("JWT private key is not allowed for verifier-only services");
+        }
         this.allowLegacyHmac = allowLegacyHmac;
         this.legacyHmacKey = allowLegacyHmac ? readLegacyKey(legacySecret) : null;
         this.issuer = requireNonBlank(issuer, "JWT issuer is required for RS256");
         this.keyId = requireNonBlank(keyId, "JWT key id is required for RS256");
         this.clock = clock;
+        this.signingEnabled = signingEnabled;
+        this.legacyAcceptUntil = legacyAcceptUntil;
     }
 
     public String generateToken(Long userId, String email, String role, long expirationMs) {
@@ -104,6 +127,9 @@ public class JwtTokenService {
     }
 
     public String generateToken(String subject, Map<String, ?> claims, long expirationMs) {
+        if (!signingEnabled) {
+            throw new IllegalStateException("JWT signing is disabled for this verifier-only service");
+        }
         Instant now = clock.instant();
         var builder = Jwts.builder()
                 .subject(subject)
@@ -196,7 +222,8 @@ public class JwtTokenService {
                 asymmetricFailure = ex;
             }
         }
-        if (allowLegacyHmac && legacyHmacKey != null) {
+        if (allowLegacyHmac && legacyHmacKey != null
+                && (legacyAcceptUntil == null || clock.instant().isBefore(legacyAcceptUntil))) {
             return parser()
                     .verifyWith(legacyHmacKey)
                     .build()

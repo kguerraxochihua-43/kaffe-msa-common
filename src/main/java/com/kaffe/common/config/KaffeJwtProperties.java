@@ -10,6 +10,9 @@ public class KaffeJwtProperties {
     private String privateKey;
     private String legacySecret;
     private boolean allowLegacyHmac;
+    private boolean requireAsymmetric;
+    private boolean signingEnabled = true;
+    private String legacyAcceptUntil;
     private String issuer = "kaffe";
     private String keyId = "kaffe-auth-rs256-v1";
     private String cookieName = "KAFFE_AUTH";
@@ -57,6 +60,13 @@ public class KaffeJwtProperties {
     public String getIssuer() {
         return issuer;
     }
+
+    public boolean isRequireAsymmetric() { return requireAsymmetric; }
+    public void setRequireAsymmetric(boolean value) { requireAsymmetric = value; }
+    public boolean isSigningEnabled() { return signingEnabled; }
+    public void setSigningEnabled(boolean value) { signingEnabled = value; }
+    public String getLegacyAcceptUntil() { return legacyAcceptUntil; }
+    public void setLegacyAcceptUntil(String value) { legacyAcceptUntil = value; }
 
     public void setIssuer(String issuer) {
         this.issuer = issuer;

@@ -19,11 +19,20 @@ kaffe.jwt.secret=kaffe-local-dev-secret-change-me
 kaffe.jwt.cookie-name=${JWT_COOKIE_NAME:KAFFE_AUTH}
 ```
 
-Production must provide:
+The shared HMAC key remains a **temporary compatibility mode**, not the target
+production design. Runtime rollout and expiry are documented in
+`../../infra/aws/ec2-docker-dev/CREDENTIAL-ISOLATION.md`.
 
-```properties
-kaffe.jwt.secret=${JWT_SECRET}
-```
+For asymmetric verification configure `JWT_PUBLIC_KEY_BASE64`,
+`KAFFE_JWT_REQUIRE_ASYMMETRIC=true`, `KAFFE_JWT_ISSUER`, `KAFFE_JWT_KEY_ID`, and
+`KAFFE_JWT_SIGNING_ENABLED=false`. Only Auth receives `JWT_PRIVATE_KEY_BASE64`
+and `KAFFE_JWT_SIGNING_ENABLED=true`. Keys are standard X.509 public / PKCS#8
+private DER encoded as base64; RSA must be at least 2048 bits.
+
+A legacy migration window additionally requires `JWT_LEGACY_SECRET`,
+`KAFFE_JWT_ALLOW_LEGACY_HMAC=true`, and an explicit UTC instant in
+`KAFFE_JWT_LEGACY_ACCEPT_UNTIL`. After that instant legacy tokens are rejected
+without restarting the process. Never use JWT signing keys to encrypt new data.
 
 ## Database Rule
 
@@ -41,6 +50,13 @@ The auth schema standard is:
 kaffe.auth.schema=${KAFFE_AUTH_SCHEMA:kaffe_auth}
 ```
 
+`KAFFE_RUNTIME_ENFORCE_LEAST_PRIVILEGE=true` enables a read-only startup check
+that refuses administrator/BYPASSRLS roles, membership in privileged roles,
+relation ownership and schema CREATE privileges. Enable it only after the
+service's exact grants and existing RLS policies have passed integration tests.
+The migration role must remain outside application containers. The Postal
+permission pilot and real PostgreSQL tests are in the infrastructure runbook.
+
 ## Maven Usage
 
 Install locally:
@@ -55,7 +71,7 @@ Then consume from an MSA:
 <dependency>
     <groupId>com.kaffe</groupId>
     <artifactId>kaffe-msa-common</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
 </dependency>
 ```
 

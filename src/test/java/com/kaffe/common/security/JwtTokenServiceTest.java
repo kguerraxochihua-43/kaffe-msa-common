@@ -143,6 +143,48 @@ class JwtTokenServiceTest {
         return generator.generateKeyPair();
     }
 
+    @Test
+    void shouldStopAcceptingLegacyTokensAtTheExplicitDeadline() throws Exception {
+        KeyPair pair = rsaKeyPair();
+        Instant deadline = Instant.parse("2026-10-09T00:00:00Z");
+        Clock before = Clock.fixed(deadline.minusSeconds(1), ZoneOffset.UTC);
+        String token = new JwtTokenService(SECRET, before).generateToken(1L, "test@example.test", "owner", 60000);
+        JwtTokenService verifier = new JwtTokenService(encoded(pair.getPublic()), null, SECRET, true,
+                "kaffe", "key-1", Clock.fixed(deadline, ZoneOffset.UTC), false, deadline);
+        // Once the deadline passes, HMAC verification fails even without a restart.
+        assertThat(verifier.extractSubject(token)).isEmpty();
+    }
+
+    @Test
+    void shouldRejectMismatchedPublicAndPrivateKeys() throws Exception {
+        KeyPair first = rsaKeyPair();
+        KeyPair second = rsaKeyPair();
+        assertThatThrownBy(() -> new JwtTokenService(encoded(first.getPublic()), encoded(second.getPrivate()),
+                null, false, "kaffe", "key-1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("do not match");
+    }
+
+    @Test
+    void shouldRejectRsaPublicKeyUsedAsAnHmacSigningSecret() throws Exception {
+        KeyPair pair = rsaKeyPair();
+        String forged = io.jsonwebtoken.Jwts.builder()
+                .subject("test@example.test")
+                .issuer("kaffe")
+                .claim("userId", "1")
+                .claim("email", "test@example.test")
+                .claim("role", "owner")
+                .claim(JwtTokenService.CLAIM_TOKEN_TYPE, JwtTokenService.TOKEN_TYPE_ACCESS)
+                .expiration(java.util.Date.from(Instant.now().plusSeconds(600)))
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(pair.getPublic().getEncoded()),
+                        io.jsonwebtoken.Jwts.SIG.HS256)
+                .compact();
+        for (boolean legacy : new boolean[]{false, true}) {
+            var verifier = new JwtTokenService(encoded(pair.getPublic()), null, legacy ? SECRET : null,
+                    legacy, "kaffe", "key-1");
+            assertThat(verifier.parsePrincipal(forged)).isEmpty();
+        }
+    }
+
     private static String encoded(java.security.Key key) {
         return Base64.getEncoder().encodeToString(key.getEncoded());
     }
