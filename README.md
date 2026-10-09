@@ -59,6 +59,17 @@ permission pilot and real PostgreSQL tests are in the infrastructure runbook.
 
 ## Maven Usage
 
+The 2.x line requires Java 21 and Spring Boot 4.1.x. Do not substitute it into
+Boot 3 services. Kaffe currently uses Boot's explicit Jackson 2 compatibility
+module to preserve HTTP and RabbitMQ payload contracts; consumers must exclude
+`spring-boot-starter-jackson` and use
+`spring.http.converters.preferred-json-mapper=jackson2`. Jackson 3 migration is a
+separate, contract-tested change.
+
+Publish the new common artifact before releasing its consumers. The previous
+1.1.2 artifact is not overwritten. A local `install` alone does not make the
+2.0.0-SNAPSHOT artifact available to CI or production builds.
+
 Install locally:
 
 ```bash
